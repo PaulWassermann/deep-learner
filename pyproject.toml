@@ -1,0 +1,59 @@
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+# ========== Package information ==========
+[tool.poetry]
+name = "deep-learner"
+version = "0.1.0"
+description = "A package that explores reverse-mode automatic differentiation."
+authors = ["Paul Wassermann <paul9499@gmail.com>"]
+readme = "README.md"
+packages = [{include = "deep_learner", from = "src"}]
+
+# ========== Poetry requirements ==========
+[tool.poetry.dependencies]
+python = ">=3.11,<3.13"
+numpy = "^1.26.0"
+scipy = "^1.11.3"
+
+# Datasets dependencies
+mnist = "^0.2.2"
+cifar10-web = "^0.0.4"
+
+[tool.poetry.group.dev.dependencies]
+black = "^23.9.1"
+isort = "^5.12.0"
+mypy = "^1.5.1"
+pre-commit = "^3.4.0"
+pylint = "^3.0.1"
+pytest = "^7.4.2"
+matplotlib = "^3.8.1"
+
+# ========== Tools configuration ==========
+[tool.poetry.group.scripts.dependencies]
+torch = "^2.3.0"
+torchvision = "^0.18.0"
+
+[tool.black]
+line-length = 88
+target-version = ["py311", "py312"]
+
+[tool.isort]
+profile = "black"
+
+[tool.mypy]
+mypy_path = "src"
+disallow_any_expr = true
+disallow_any_generics = true
+disallow_untyped_defs = true
+disallow_untyped_decorators = true
+warn_redundant_casts = true
+warn_return_any = true
+warn_unreachable = true
+
+[tool.pylint.main]
+fail-under = 9
+good-names =  ["_"]
+max-line-length = 88
+check-quote-consistency = true

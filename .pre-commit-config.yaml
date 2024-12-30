@@ -1,0 +1,35 @@
+fail_fast: true
+repos:
+    - repo: https://github.com/pre-commit/pre-commit-hooks
+      rev: v3.2.0
+      hooks:
+          - id: no-commit-to-branch
+          - id: trailing-whitespace
+          - id: end-of-file-fixer
+          - id: check-json
+          # - id: pretty-format-json
+          - id: check-toml
+          - id: check-yaml
+          - id: check-added-large-files
+
+    - repo: local
+      hooks:
+        - id: sort-imports
+          name: sort-imports
+          entry: make sort-imports
+          language: system
+
+        - id: format
+          name: format
+          entry: make format
+          language: system
+
+        - id: quality-check
+          name: quality-check
+          entry: make quality-check
+          language: system
+
+        - id: type-check
+          name: type-check
+          entry: make type-check
+          language: system

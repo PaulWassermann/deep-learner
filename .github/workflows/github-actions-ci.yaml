@@ -1,0 +1,28 @@
+on:
+  push:
+    paths:
+      - 'src/**'
+
+jobs:
+
+  quality-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install poetry
+        run: pip install poetry
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: poetry
+
+      - name: Install package on Python 3.11
+        run: make install-dev
+
+      - name: Check code quality
+        run: make check
+
+      - name: Run unit tests
+        run: make test
