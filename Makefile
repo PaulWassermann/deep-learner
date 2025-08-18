@@ -1,31 +1,34 @@
+# .PHONY: publish
+# build:
+# 	@poetry publish --build
+
 .PHONY: check
 check:
-	@poetry run pre-commit run --all-files
+	@uv run pre-commit run --all-files
 
 .PHONY: format
 format:
-	@poetry run black .
+	@uv run black .
 
 .PHONY: install
 install:
-	@poetry install --without dev
-
+	@uv sync --no-dev
 .PHONY: install-dev
 install-dev:
-	@poetry install
+	@uv sync
 
 .PHONY: quality-check
 quality-check:
-	@poetry run pylint src
+	@uv run pylint src
 
 .PHONY: sort-imports
 sort-imports:
-	@poetry run isort src
+	@uv run isort src
 
 # TODO: add a report file for coverage
 .PHONY: test
 test:
-	@poetry run pytest tests
+	@uv run pytest tests
 
 .PHONY: coverage
 coverage:
@@ -33,4 +36,4 @@ coverage:
 
 .PHONY: type-check
 type-check:
-	@poetry run mypy src
+	@uv run mypy src

@@ -1,47 +1,53 @@
 [build-system]
-requires = ["poetry-core"]
-build-backend = "poetry.core.masonry.api"
+requires = ["uv_build>=0.8.0,<0.9"]
+build-backend = "uv_build"
 
 # ========== Package information ==========
-[tool.poetry]
+[project]
 name = "deep-learner"
 version = "0.1.0"
 description = "A package that explores reverse-mode automatic differentiation."
-authors = ["Paul Wassermann <paul9499@gmail.com>"]
+authors = [
+    { name = "Paul Wassermann", email = "paul9499@gmail.com" }
+]
 readme = "README.md"
-packages = [{include = "deep_learner", from = "src"}]
+requires-python = ">=3.11,<3.13"
 
-# ========== Poetry requirements ==========
-[tool.poetry.dependencies]
-python = ">=3.11,<3.13"
-numpy = "^1.26.0"
-scipy = "^1.11.3"
+# ========== Dependencies ==========
+dependencies = [
+    "cupy-cuda12x>=13.3.0,<14",
+    "numpy>=1.26.0,<2",
+    "scipy>=1.11.3,<2",
 
-# Datasets dependencies
-mnist = "^0.2.2"
-cifar10-web = "^0.0.4"
+    # Datasets dependencies
+    "mnist>=0.2.2,<1",
+    "cifar10-web>=0.0.4,<1",
+    "scikit-learn>=1.6.0,<2",
+]
 
-[tool.poetry.group.dev.dependencies]
-black = "^23.9.1"
-isort = "^5.12.0"
-mypy = "^1.5.1"
-pre-commit = "^3.4.0"
-pylint = "^3.0.1"
-pytest = "^7.4.2"
-matplotlib = "^3.8.1"
+[dependency-groups]
+dev = [
+    "isort>=5.12.0,<6",
+    "matplotlib>=3.8.1,<4",
+    "mypy>=1.5.1,<2",
+    "pre-commit>=3.4.0,<4",
+    "pylint>=3.0.1,<4",
+    "pytest>=7.4.2,<8",
+    "ruff>=0.12.7,<1",
+]
+
+notebooks = [
+    "ipynb>=0.5.1,<1",
+    "ipykernel>=6.29.5,<7",
+    "tqdm>=4.67.1",
+]
+
+scripts = [
+    "torch>=2.3.0,<3",
+    "torchvision>=0.18.0,<1",
+]
 
 # ========== Tools configuration ==========
-[tool.poetry.group.scripts.dependencies]
-torch = "^2.3.0"
-torchvision = "^0.18.0"
-
-[tool.black]
-line-length = 88
-target-version = ["py311", "py312"]
-
-[tool.isort]
-profile = "black"
-
 [tool.mypy]
 mypy_path = "src"
 disallow_any_expr = true
@@ -57,3 +63,11 @@ fail-under = 9
 good-names =  ["_"]
 max-line-length = 88
 check-quote-consistency = true
+
+[tool.ruff]
+line-length = 88
+indent-width = 4
+
+[tool.ruff.format]
+indent-style = "space"
+quote-style = "double"
