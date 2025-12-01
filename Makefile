@@ -1,6 +1,10 @@
-# .PHONY: publish
-# build:
-# 	@poetry publish --build
+.PHONY: publish
+publish:
+	@echo Not implemented
+
+.PHONY: build
+build:
+	@echo Not implemented
 
 .PHONY: check
 check:
@@ -8,22 +12,19 @@ check:
 
 .PHONY: format
 format:
-	@uv run black .
+	@uv run ruff format
 
 .PHONY: install
 install:
 	@uv sync --no-dev
+
 .PHONY: install-dev
 install-dev:
 	@uv sync
 
 .PHONY: quality-check
 quality-check:
-	@uv run pylint src
-
-.PHONY: sort-imports
-sort-imports:
-	@uv run isort src
+	@uv run ruff check examples src tests
 
 # TODO: add a report file for coverage
 .PHONY: test
@@ -36,4 +37,4 @@ coverage:
 
 .PHONY: type-check
 type-check:
-	@uv run mypy src
+	@uv run ty check

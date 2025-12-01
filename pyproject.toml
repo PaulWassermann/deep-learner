@@ -11,14 +11,13 @@ authors = [
     { name = "Paul Wassermann", email = "paul9499@gmail.com" }
 ]
 readme = "README.md"
-requires-python = ">=3.11,<3.13"
+requires-python = ">=3.12,<3.15"
 
 # ========== Dependencies ==========
 dependencies = [
     "cupy-cuda12x>=13.3.0,<14",
-    "numpy>=1.26.0,<2",
+    "numpy>=2.3.5",
     "scipy>=1.11.3,<2",
-
     # Datasets dependencies
     "mnist>=0.2.2,<1",
     "cifar10-web>=0.0.4,<1",
@@ -27,13 +26,11 @@ dependencies = [
 
 [dependency-groups]
 dev = [
-    "isort>=5.12.0,<6",
     "matplotlib>=3.8.1,<4",
-    "mypy>=1.5.1,<2",
     "pre-commit>=3.4.0,<4",
-    "pylint>=3.0.1,<4",
     "pytest>=7.4.2,<8",
     "ruff>=0.12.7,<1",
+    "ty>=0.0.1a19",
 ]
 
 notebooks = [
@@ -47,27 +44,28 @@ scripts = [
     "torchvision>=0.18.0,<1",
 ]
 
+[tool.uv.sources]
+torch = { index = "pytorch" }
+
+[[tool.uv.index]]
+name = "pytorch"
+url = "https://download.pytorch.org/whl/cu130"
+explicit = true
+
 # ========== Tools configuration ==========
-[tool.mypy]
-mypy_path = "src"
-disallow_any_expr = true
-disallow_any_generics = true
-disallow_untyped_defs = true
-disallow_untyped_decorators = true
-warn_redundant_casts = true
-warn_return_any = true
-warn_unreachable = true
-
-[tool.pylint.main]
-fail-under = 9
-good-names =  ["_"]
-max-line-length = 88
-check-quote-consistency = true
-
 [tool.ruff]
 line-length = 88
 indent-width = 4
+target-version = "py312"
 
 [tool.ruff.format]
 indent-style = "space"
 quote-style = "double"
+
+[tool.ruff.lint]
+select = ["E", "F", "UP", "B", "SIM", "I"]
+
+[tool.ty.src]
+include = [
+    "src"
+]

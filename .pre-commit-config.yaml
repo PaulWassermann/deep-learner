@@ -8,17 +8,13 @@ repos:
           - id: end-of-file-fixer
           - id: check-json
           - id: pretty-format-json
+            args: ["--autofix"]
           - id: check-toml
           - id: check-yaml
           - id: check-added-large-files
 
     - repo: local
       hooks:
-        - id: sort-imports
-          name: sort-imports
-          entry: make sort-imports
-          language: system
-
         - id: format
           name: format
           entry: make format
