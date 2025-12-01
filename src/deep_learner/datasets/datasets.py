@@ -15,8 +15,11 @@ def cifar10() -> tuple[NDArray, NDArray, NDArray, NDArray]:
 
 
 def mnist() -> tuple[NDArray, NDArray, NDArray, NDArray]:
-    mnist_ext.temporary_dir = lambda: DATASETS_DIR.as_posix()
+    mnist_dir = DATASETS_DIR.joinpath("mnist")
+    mnist_ext.temporary_dir = lambda: mnist_dir.as_posix()
     mnist_ext.datasets_url = "https://ossci-datasets.s3.amazonaws.com/mnist/"
+
+    mnist_dir.mkdir(parents=True, exist_ok=True)
 
     return (
         mnist_ext.train_images(),

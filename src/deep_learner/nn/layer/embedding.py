@@ -14,7 +14,7 @@ class Embedding(Module):
         self.initialize_embeddings()
 
     def forward(self, x: Tensor) -> Tensor:
-        ...
+        raise NotImplementedError
 
     # TODO: provide initialization variants
     def initialize_embeddings(self) -> None:
@@ -26,4 +26,7 @@ class Embedding(Module):
         )
 
     def __repr__(self):
-        return f"Embedding(vocab_size={self.vocabulary_size}, n_features={self.embedding_size})"
+        return (
+            "Embedding("
+            + f"vocab_size={self.vocabulary_size}, n_features={self.embedding_size})"
+        )

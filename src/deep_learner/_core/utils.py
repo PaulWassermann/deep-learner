@@ -1,25 +1,66 @@
-from functools import partial, update_wrapper
-from typing import Callable
+from collections.abc import Iterable
+from typing import Any
+
+import cupy as cp
+import numpy as np
+
+import deep_learner._core.types as types
 
 
-def format_grad_func_name(func: Callable) -> str:
-    """
-    Format the name of a function for a better display.
+class HookHandle:
+    _count: int = 0
 
-    Parameters
-    ----------
-    func: a callable
-        The callable must have the special attribute `__name__` set.
+    def __new__(cls, *args, **kwargs):
+        HookHandle._count += 1
+        return super().__new__(cls, *args, **kwargs)
 
-    Returns
-    -------
-    str:
-        The formatted function name.
-    """
+    def __init__(self, hooks_dict: dict[str, Any]):
+        self._hook_id = HookHandle._count
+        self._hooks_dict = hooks_dict
 
-    func_name_parts: list[str] = func.__name__.split("_")
-    func_name = "".join([part.capitalize() for part in func_name_parts])
-    return func_name
+    def remove(self):
+        if self._hook_id in self._hooks_dict:
+            del self._hooks_dict[self._hook_id]
+
+
+class HookHandleGroup:
+    def __init__(self, hook_handles: Iterable[HookHandle]):
+        self._hooks = list(hook_handles)
+
+    def remove(self):
+        for hook in self._hooks:
+            hook.remove()
+
+
+def convert_array(x: types.DeviceArray, device: types.DeviceArray) -> types.DeviceArray:
+    if isinstance(x, np.ndarray) and device == types.Device.CUDA:
+        return cp.asarray(x)
+
+    elif isinstance(x, cp.ndarray) and device == types.Device.CPU:
+        return cp.asnumpy(x)
+
+    else:
+        return x
+
+
+def get_backend(device: types.Device) -> types.Backend:
+    match device:
+        case types.Device.CPU:
+            return types.Backend.CPU.value
+        case types.Device.CUDA:
+            return types.Backend.CUDA.value
+        case _:
+            raise ValueError(f"Unknown device: {device}")
+
+
+def get_special_backend(device: types.Device) -> types.SpecialBackend:
+    match device:
+        case types.Device.CPU:
+            return types.SpecialBackend.CPU.value
+        case types.Device.CUDA:
+            return types.SpecialBackend.CUDA.value
+        case _:
+            raise ValueError(f"Unknown device: {device}")
 
 
 def indent_text(text: str, indent: int = 4) -> str:
@@ -41,28 +82,3 @@ def indent_text(text: str, indent: int = 4) -> str:
     """
 
     return "\n".join(indent * " " + line for line in text.splitlines())
-
-
-def partial_wrapper(func: Callable, *args, **kwargs) -> Callable:
-    """
-    Return a partial function with the appropriate `__name__` and  __doc__` attributes.
-
-    Parameters
-    ----------
-    func: callable
-        Any callable.
-
-    args
-        Arguments passed to define the partial function.
-
-    kwargs
-        Arguments passed to define the partial function.
-
-    Returns
-    -------
-    callable:
-        A partial function wrapping the input function.
-    """
-
-    partial_func = partial(func, *args, **kwargs)
-    return update_wrapper(partial_func, func)

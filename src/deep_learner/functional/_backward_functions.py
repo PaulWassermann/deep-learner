@@ -1,105 +1,299 @@
-import numpy as np
-import scipy.special
+from abc import ABC, abstractmethod
+from typing import Self
 
-from deep_learner.functional.utils import safe_div, safe_log
-from deep_learner.tensor import Tensor
+import deep_learner._core.types as types
+import deep_learner._core.utils as utils
+import deep_learner._tensor as t
+import deep_learner.functional.utils as f
+
+
+class BackwardFunction(ABC):
+    def __init__(self):
+        self._tensors = []
+
+    @abstractmethod
+    def __call__(self, grad: t.Tensor, *args, **kwargs) -> dict[t.Tensor, t.Tensor]: ...
+
+    def __setattr__(self, name, value):
+        if isinstance(value, t.Tensor):
+            self._tensors.append(value)
+        return super().__setattr__(name, value)
+
+    @classmethod
+    def __str__(cls) -> str:
+        return cls.__name__
+
+    def to(self, device: types.Device) -> Self:
+        for tensor in self._tensors:
+            tensor.to(device)
+        return self
 
 
 # ---------- Unary functions ----------
-def broadcast_backward(a: Tensor, shape: int | tuple[int]) -> dict[Tensor, Tensor]:
-    # return {a: Tensor(data=...)}
-    ...
+class DropoutBackward(BackwardFunction):
+    def __init__(self, a: t.Tensor, mask: t.Tensor, drop_proba: float):
+        super().__init__()
+
+        self.a = a
+        self.mask = mask
+        self.drop_proba = drop_proba
+
+    def __call__(self, grad: t.Tensor) -> dict[t.Tensor, t.Tensor]:
+        return {
+            self.a: t.Tensor(
+                data=grad.data * self.mask / (1 - self.drop_proba), device=grad.device
+            )
+        }
 
 
-def dropout_backward(
-    a: Tensor, grad: Tensor, mask: Tensor, drop_proba: float
-) -> dict[Tensor, Tensor]:
-    return {a: Tensor(data=grad.data * mask / (1 - drop_proba))}
+class ReluBackward(BackwardFunction):
+    def __init__(self, a: t.Tensor):
+        super().__init__()
+
+        self.a = a
+
+    def __call__(self, grad: t.Tensor) -> dict[t.Tensor, t.Tensor]:
+        return {
+            self.a: t.Tensor(
+                data=self.a.data.astype(bool) * grad.data, device=grad.device
+            )
+        }
 
 
-def relu_backward(a: Tensor, grad: Tensor) -> dict[Tensor, Tensor]:
-    return {a: Tensor(data=a.data.astype(bool) * grad.data)}
+class SigmoidBackward(BackwardFunction):
+    def __init__(self, a: t.Tensor):
+        super().__init__()
 
+        self.a = a
 
-def sigmoid_backward(a: Tensor, grad: Tensor) -> dict[Tensor, Tensor]:
-    return {
-        a: Tensor(
-            data=scipy.special.expit(a.data)
-            * (1 - scipy.special.expit(a.data))
-            * grad.data
-        )
-    }
+    def __call__(self, grad: t.Tensor) -> dict[t.Tensor, t.Tensor]:
+        backend = utils.get_special_backend(grad.device)
+        return {
+            self.a: t.Tensor(
+                data=backend.expit(self.a.data)
+                * (1 - backend.expit(self.a.data))
+                * grad.data,
+                device=grad.device,
+            )
+        }
 
 
 # TODO: possible optimization, cache softmax, faster but heavier memory constraint
-def softmax_backward(a: Tensor, grad: Tensor, cache: Tensor) -> dict[Tensor, Tensor]:
-    outer_product = np.matmul(cache[..., None], np.expand_dims(cache, axis=-2))
-    diagonals = np.zeros(cache.data.shape + cache.data.shape[-1:])
-    temp = np.diagonal(diagonals, axis1=-2, axis2=-1)
-    temp.setflags(write=True)
-    temp[:] = cache
+# TODO: refactor computation to avoid if statement
+class SoftmaxBackward(BackwardFunction):
+    def __init__(self, a: t.Tensor, cache: types.DeviceArray):
+        super().__init__()
 
-    new_grad = np.squeeze(
-        np.matmul(np.expand_dims(grad.data, axis=-2), diagonals - outer_product)
-    )
-    return {a: Tensor(new_grad)}
+        self.a = a
+        self.cache = cache
+
+    def __call__(self, grad: t.Tensor) -> dict[t.Tensor, t.Tensor]:
+        backend = utils.get_backend(grad.device)
+        outer_product = backend.matmul(
+            self.cache[..., None], backend.expand_dims(self.cache, axis=-2)
+        )
+        diagonals = backend.zeros(self.cache.shape + self.cache.shape[-1:])
+        temp = backend.diagonal(diagonals, axis1=-2, axis2=-1)
+
+        if grad.device == types.Device.CPU:
+            temp.setflags(write=True)
+
+        temp[:] = self.cache
+
+        new_grad = backend.squeeze(
+            backend.matmul(
+                backend.expand_dims(grad.data, axis=-2), diagonals - outer_product
+            )
+        )
+        return {self.a: t.Tensor(new_grad, device=grad.device)}
+
+    def to(self, device: types.Device) -> Self:
+        self.cache = utils.convert_array(self.cache, device)
+        return super().to(device)
 
 
-def softsign_backward(a: Tensor, grad: Tensor) -> dict[Tensor, Tensor]:
-    return {a: Tensor(data=(1 / (1 + np.abs(a.data) ** 2)) * grad.data)}
+class SoftsignBackward(BackwardFunction):
+    def __init__(self, a: t.Tensor):
+        super().__init__()
+
+        self.a = a
+
+    def __call__(self, grad: t.Tensor) -> dict[t.Tensor, t.Tensor]:
+        backend = utils.get_backend(grad.device)
+        return {
+            self.a: t.Tensor(
+                data=(1 / (1 + backend.abs(self.a.data) ** 2)) * grad.data,
+                device=grad.device,
+            )
+        }
 
 
-def sum_backward(a: Tensor, grad: Tensor) -> dict[Tensor, Tensor]:
-    return {a: Tensor(data=np.ones(a.data.shape) * grad.data)}
+class SumBackward(BackwardFunction):
+    def __init__(self, a: t.Tensor):
+        super().__init__()
+
+        self.a = a
+
+    def __call__(self, grad: t.Tensor) -> dict[t.Tensor, t.Tensor]:
+        backend = utils.get_backend(grad.device)
+        return {
+            self.a: t.Tensor(
+                data=backend.ones(self.a.data.shape) * grad.data, device=grad.device
+            )
+        }
+
+
+class TanhBackward(BackwardFunction):
+    def __init__(self, a: t.Tensor):
+        super().__init__()
+
+        self.a = a
+
+    def __call__(self, grad: t.Tensor) -> dict[t.Tensor, t.Tensor]:
+        backend = utils.get_backend(grad.device)
+        return {
+            self.a: t.Tensor(
+                data=(1 - backend.tanh(self.a.data) ** 2) * grad.data,
+                device=grad.device,
+            )
+        }
 
 
 # ---------- Binary functions ----------
 # TODO : fix issue when multiplying grad with np.ones wiht a batch dimension
-def add_backward(a: Tensor, b: Tensor, grad: Tensor) -> dict[Tensor, Tensor]:
-    return {
-        a: Tensor(data=np.ones(a.data.shape) * grad.data),
-        b: Tensor(data=np.ones(b.data.shape) * grad.data),
-    }
+class AddBackward(BackwardFunction):
+    def __init__(self, a: t.Tensor, b: t.Tensor):
+        super().__init__()
+
+        self.a = a
+        self.b = b
+
+    def __call__(self, grad: t.Tensor) -> dict[t.Tensor, t.Tensor]:
+        backend = utils.get_backend(grad.device)
+        return {
+            self.a: t.Tensor(
+                data=backend.ones(self.a.data.shape) * grad.data, device=grad.device
+            ),
+            self.b: t.Tensor(
+                data=backend.ones(self.b.data.shape) * grad.data, device=grad.device
+            ),
+        }
 
 
-def binary_cross_entropy_backward(
-    x: Tensor, y: Tensor, grad: Tensor
-) -> dict[Tensor, Tensor]:
-    return {
-        x: Tensor(
-            data=-(safe_div(y.data, x.data) - safe_div(1 - y.data, 1 - x.data))
-            / len(x.data)
-            * grad.data
-        ),
-        y: Tensor(
-            data=-(safe_log(x.data) - safe_log(1 - x.data)) / len(x.data) * grad.data
-        ),
-    }
+class BinaryCrossEntropyBackward(BackwardFunction):
+    def __init__(self, x: t.Tensor, y: t.Tensor):
+        super().__init__()
+
+        self.x = x
+        self.y = y
+
+    def __call__(self, grad: t.Tensor) -> dict[t.Tensor, t.Tensor]:
+        return {
+            self.x: t.Tensor(
+                data=-(
+                    f.safe_div(self.y.data, self.x.data)
+                    - f.safe_div(1 - self.y.data, 1 - self.x.data)
+                )
+                / len(self.x.data)
+                * grad.data,
+                device=grad.device,
+            ),
+            self.y: t.Tensor(
+                data=-(f.safe_log(self.x.data) - f.safe_log(1 - self.x.data))
+                / len(self.x.data)
+                * grad.data,
+                device=grad.device,
+            ),
+        }
 
 
-def cross_entropy_backward(x: Tensor, y: Tensor, grad: Tensor) -> dict[Tensor, Tensor]:
-    return {
-        x: Tensor(data=-safe_div(y.data, x.data) / len(x.data) * grad.data),
-        y: Tensor(data=-safe_log(x.data) / len(x.data) * grad.data),
-    }
+class CrossEntropyBackward(BackwardFunction):
+    def __init__(self, x: t.Tensor, y: t.Tensor):
+        super().__init__()
+
+        self.x = x
+        self.y = y
+
+    def __call__(self, grad: t.Tensor) -> dict[t.Tensor, t.Tensor]:
+        return {
+            self.x: t.Tensor(
+                data=-f.safe_div(self.y.data, self.x.data)
+                / len(self.x.data)
+                * grad.data,
+                device=grad.device,
+            ),
+            self.y: t.Tensor(
+                data=-f.safe_log(self.x.data) / len(self.x.data) * grad.data,
+                device=grad.device,
+            ),
+        }
 
 
-def matmul_backward(a: Tensor, b: Tensor, grad: Tensor) -> dict[Tensor, Tensor]:
-    return {
-        a: Tensor(data=np.matmul(grad.data, np.swapaxes(b.data, -2, -1))),
-        b: Tensor(data=np.matmul(np.swapaxes(a.data, -2, -1), grad.data)),
-    }
+class DivideBackward(BackwardFunction):
+    def __init__(self, a: t.Tensor, b: t.Tensor):
+        super().__init__()
+
+        self.a = a
+        self.b = b
+
+    def __call__(self, grad: t.Tensor):
+        return {
+            self.a: t.Tensor(data=1 / self.b.data * grad.data, device=grad.device),
+            self.b: t.Tensor(
+                data=-self.a.data / (self.b.data**2) * grad.data, device=grad.device
+            ),
+        }
 
 
-def multiply_backward(a: Tensor, b: Tensor, grad: Tensor) -> dict[Tensor, Tensor]:
-    return {
-        a: Tensor(data=b.data * grad.data),
-        b: Tensor(data=a.data * grad.data),
-    }
+class MatmulBackward(BackwardFunction):
+    def __init__(self, a: t.Tensor, b: t.Tensor):
+        super().__init__()
+
+        self.a = a
+        self.b = b
+
+    def __call__(self, grad: t.Tensor) -> dict[t.Tensor, t.Tensor]:
+        backend = utils.get_backend(grad.device)
+        return {
+            self.a: t.Tensor(
+                data=grad.data @ backend.swapaxes(self.b.data, -2, -1),
+                device=grad.device,
+            ),
+            self.b: t.Tensor(
+                data=backend.swapaxes(self.a.data, -2, -1) @ grad.data,
+                device=grad.device,
+            ),
+        }
 
 
-def subtract_backward(a: Tensor, b: Tensor, grad: Tensor) -> dict[Tensor, Tensor]:
-    return {
-        a: Tensor(data=np.ones(a.data.shape) * grad.data),
-        b: Tensor(data=-np.ones(b.data.shape) * grad.data),
-    }
+class MutliplyBackward(BackwardFunction):
+    def __init__(self, a: t.Tensor, b: t.Tensor):
+        super().__init__()
+
+        self.a = a
+        self.b = b
+
+    def __call__(self, grad: t.Tensor) -> dict[t.Tensor, t.Tensor]:
+        return {
+            self.a: t.Tensor(data=self.b.data * grad.data, device=grad.device),
+            self.b: t.Tensor(data=self.a.data * grad.data, device=grad.device),
+        }
+
+
+class SubtractBackward(BackwardFunction):
+    def __init__(self, a: t.Tensor, b: t.Tensor):
+        super().__init__()
+
+        self.a = a
+        self.b = b
+
+    def __call__(self, grad: t.Tensor) -> dict[t.Tensor, t.Tensor]:
+        backend = utils.get_backend(grad.device)
+        return {
+            self.a: t.Tensor(
+                data=backend.ones(self.a.data.shape) * grad.data, device=grad.device
+            ),
+            self.b: t.Tensor(
+                data=-backend.ones(self.b.data.shape) * grad.data, device=grad.device
+            ),
+        }

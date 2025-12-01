@@ -1,16 +1,15 @@
 from abc import ABC, abstractmethod
 
-from deep_learner.nn import Module
+import deep_learner.nn.module as m
 
 
 class Optimizer(ABC):
-    def __init__(self, module: Module, learning_rate: float):
+    def __init__(self, module: m.Module, learning_rate: float):
         self.learning_rate: float = learning_rate
-        self.module: Module = module
+        self.module: m.Module = module
 
     @abstractmethod
-    def step(self):
-        ...
+    def step(self): ...
 
     def zero_grad(self):
         for parameter in self.module.parameters():

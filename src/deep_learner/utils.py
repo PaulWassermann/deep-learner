@@ -1,8 +1,29 @@
-from collections.abc import Sequence
+from collections.abc import Generator, Iterable, Sequence
+from itertools import islice
 
 import numpy as np
 
 from deep_learner import Tensor, tensor
+
+
+def batch(x, /, *iterables, batch_size: int, shuffle: bool = True) -> Generator[tuple]:
+    indices = np.arange(len(x))
+    rng = np.random.default_rng()
+
+    if shuffle:
+        rng.shuffle(indices, axis=0)
+
+    yield from zip(
+        *(_batched(arg[indices], batch_size) for arg in (x, *iterables)), strict=False
+    )
+
+
+def _batched(iterable: Iterable, n: int):
+    if n < 1:
+        raise ValueError("n must be at least one")
+    it = iter(iterable)
+    while batch := tuple(islice(it, n)):
+        yield batch
 
 
 def constant(

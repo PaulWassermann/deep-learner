@@ -1,9 +1,7 @@
-import numpy as np
-
-from deep_learner.nn.optimizer.optimizer import Optimizer
+import deep_learner.nn.optimizer.optimizer as o
 
 
-class SGD(Optimizer):
+class SGD(o.Optimizer):
     def step(self):
         for parameter in self.module.parameters():
             parameter.data = parameter.data - self.learning_rate * parameter.grad.data

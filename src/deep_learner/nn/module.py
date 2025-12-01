@@ -1,22 +1,29 @@
 from abc import ABC, abstractmethod
 from collections.abc import Generator
-from typing import Any, Optional, Self
+from typing import Any, Self
 
-from deep_learner._core.utils import indent_text
-from deep_learner.tensor import Tensor
+import deep_learner._core.types as types
+import deep_learner._core.utils as utils
+import deep_learner._tensor as t
 
 
 # TODO: Add docstrings
 # TODO: Add type hints
 class Module(ABC):
     def __init__(self):
-        self._parameters: dict[str, Tensor] = {}
+        self._forward_hooks: dict[int, types.ForwardHook] = {}
         self._modules: dict[str, Self] = {}
+        self._parameters: dict[str, t.Tensor] = {}
 
         self.training: bool = True
 
     def __call__(self, *args, **kwargs) -> Any:
-        return self.forward(*args, **kwargs)
+        outputs = self.forward(*args, **kwargs)
+
+        for hook in self._forward_hooks.values():
+            hook(self, outputs, *args, **kwargs)
+
+        return outputs
 
     def children(self) -> Generator[Self]:
         for _, child in self.named_children():
@@ -29,15 +36,14 @@ class Module(ABC):
             child.eval()
 
     @abstractmethod
-    def forward(self, *args, **kwargs) -> Any:
-        ...
+    def forward(self, *args, **kwargs) -> Any: ...
 
     def modules(self) -> Generator[Self]:
         for _, module in self.named_modules():
             yield module
 
     def named_children(
-        self, prefix: Optional[str] = None, visited: Optional[set[Self]] = None
+        self, prefix: str | None = None, visited: set[Self] | None = None
     ) -> Generator[tuple[str, Self]]:
         if visited is None:
             visited = set()
@@ -52,29 +58,39 @@ class Module(ABC):
                 yield child_prefix, child
                 yield from child.named_children(child_prefix, visited)
 
-    def named_modules(
-        self, prefix: Optional[str] = None
-    ) -> Generator[tuple[str, Self]]:
+    def named_modules(self, prefix: str | None = None) -> Generator[tuple[str, Self]]:
         if prefix is None:
             prefix = self.__class__.__name__
 
         yield prefix, self
-        for module_name, module in self.named_children(prefix):
-            yield module_name, module
+        yield from self.named_children(prefix)
 
-    def named_parameters(self) -> Generator[tuple[str, Tensor]]:
+    def named_parameters(self) -> Generator[tuple[str, t.Tensor]]:
         for module_name, module in self.named_modules():
             for parameter_name, parameter in module._parameters.items():
                 yield f"{module_name}.{parameter_name}", parameter
 
-    def parameters(self) -> Generator[Tensor]:
+    def parameters(self) -> Generator[t.Tensor]:
         for _, parameter in self.named_parameters():
             yield parameter
+
+    def register_backward_hook(self, hook: types.BackwardHook) -> utils.HookHandleGroup:
+        handles = []
+        for parameter in self.parameters():
+            handles.append(parameter.register_backward_hook(hook))
+        return utils.HookHandleGroup(handles)
+
+    def register_forward_hook(self, hook: types.ForwardHook) -> utils.HookHandle:
+        utils.HookHandle._count += 1
+        self._forward_hooks[utils.HookHandle._count] = hook
+        return utils.HookHandle(self._forward_hooks)
 
     def __repr__(self) -> str:
         return (
             f"{self.__class__.__name__}(\n"
-            + indent_text("\n".join(repr(module) for module in self._modules.values()))
+            + utils.indent_text(
+                "\n".join(repr(module) for module in self._modules.values())
+            )
             + "\n)"
         )
 
@@ -82,10 +98,16 @@ class Module(ABC):
         if isinstance(value, Module):
             self._modules[key] = value
 
-        elif isinstance(value, Tensor) and value.requires_grad:
+        elif isinstance(value, t.Tensor) and value.requires_grad:
             self._parameters[key] = value
 
         super().__setattr__(key, value)
+
+    def to(self, device: types.Device) -> Self:
+        for parameter in self.parameters():
+            parameter.to(device)
+
+        return self
 
     def train(self) -> None:
         self.training = True

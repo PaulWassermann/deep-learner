@@ -1,17 +1,17 @@
-from deep_learner import Tensor
-from deep_learner.functional.functions import dropout
-from deep_learner.nn.module import Module
+import deep_learner._tensor as t
+import deep_learner.functional.functions as f
+import deep_learner.nn.module as m
 
 
-class Dropout(Module):
+class Dropout(m.Module):
     def __init__(self, drop_proba: float):
         super().__init__()
 
         self.drop_proba: float = drop_proba
 
-    def forward(self, x: Tensor) -> Tensor:
+    def forward(self, x: t.Tensor) -> t.Tensor:
         if self.training:
-            return dropout(x, drop_proba=self.drop_proba)
+            return f.dropout(x, drop_proba=self.drop_proba)
         else:
             return x
 
