@@ -1,10 +1,11 @@
 """Train one Deep Learner model and one PyTorch model on the same dataset.
 
 This script exhibits a training example on a dataset using both Deep Learner and
-PyTorch. Although some code could be shared, there is some duplication to 
-clearly show how it's currently done in Deep Learner VS how it's done in 
+PyTorch. Although some code could be shared, there is some duplication to
+clearly show how it's currently done in Deep Learner VS how it's done in
 PyTorch.
 """
+
 import argparse
 import time
 from typing import Literal
@@ -35,6 +36,7 @@ BATCH_SIZE: int = 64
 EPOCHS: int = 10
 LEARNING_RATE: float = 1e-2
 
+
 # - DEEP LEARNER CODE ----------------------------------------------------------
 class DeepLearnerModel(Module):
     def __init__(self, dataset: Literal["mnist", "cifar10"]):
@@ -44,7 +46,7 @@ class DeepLearnerModel(Module):
             n_input = 784
         elif dataset == "cifar10":
             n_input = 3_072
-            
+
         self.linear_1 = Linear(n_in=n_input, n_out=128)
         self.linear_2 = Linear(n_in=128, n_out=128)
         self.linear_3 = Linear(n_in=128, n_out=10)
@@ -56,9 +58,7 @@ class DeepLearnerModel(Module):
     def forward(self, x: dl.Tensor) -> dl.Tensor:
         return self.softmax(
             self.linear_3(
-                self.dropout(
-                    self.relu(self.linear_2(self.relu(self.linear_1(x))))
-                )
+                self.dropout(self.relu(self.linear_2(self.relu(self.linear_1(x)))))
             )
         )
 
@@ -73,7 +73,7 @@ def dl_preprocess(x) -> NDArray:
 
 
 def dl_load_dataset(
-    dataset: Literal["mnist", "cifar10"]
+    dataset: Literal["mnist", "cifar10"],
 ) -> tuple[NDArray, NDArray, NDArray, NDArray]:
     if dataset == "mnist":
         train_X, train_Y, test_X, test_Y = mnist()
@@ -126,21 +126,15 @@ def dl_train(
             total_loss = total_loss + loss.detach().to(Device.CPU)
 
             train_accuracy = train_accuracy + accuracy(
-                dl.Tensor(
-                    np.argmax(y_hat.detach().to(Device.CPU).data, axis=-1)
-                ),
-                dl.Tensor(
-                    np.argmax(batch_Y.detach().to(Device.CPU).data, axis=-1)
-                ),
+                dl.Tensor(np.argmax(y_hat.detach().to(Device.CPU).data, axis=-1)),
+                dl.Tensor(np.argmax(batch_Y.detach().to(Device.CPU).data, axis=-1)),
             )
 
         model.eval()
         test_y_hat = model(dl.Tensor(test_X).to(device))
 
         test_accuracy = accuracy(
-            dl.Tensor(
-                np.argmax(test_y_hat.detach().to(Device.CPU).data, axis=-1)
-            ),
+            dl.Tensor(np.argmax(test_y_hat.detach().to(Device.CPU).data, axis=-1)),
             dl.Tensor(np.argmax(test_Y, axis=-1)),
         ).data
 
@@ -155,6 +149,7 @@ def dl_train(
         )
 
     return test_accuracy
+
 
 # - PYTORCH --------------------------------------------------------------------
 def pt_preprocessing(images) -> torch.Tensor:
@@ -295,7 +290,7 @@ def pt_train(
             f"test accuracy={test_accuracy / len(test_dataloader):.2%} "
             f"[{cumulative_time // 60:02.0f}:{cumulative_time % 60:02.0f}]"
         )
-        
+
     return test_accuracy / len(test_dataloader)
 
 
@@ -319,7 +314,7 @@ def main(args: argparse.Namespace) -> int:
     print(f"Training PyTorch model on {args.dataset}:")
     print(f"---------------------------{'-' * len(args.dataset)}\n")
     start_time = time.perf_counter()
-    pytorch_accuracy  = pt_train(pt_model, args.dataset, args.device)
+    pytorch_accuracy = pt_train(pt_model, args.dataset, args.device)
     pytorch_training_time = time.perf_counter() - start_time
     print(
         "=" * 74 + f"\n==> PyTorch model trained in "
@@ -328,14 +323,11 @@ def main(args: argparse.Namespace) -> int:
 
     # Results summary
     timing_ratio = max(
-        pytorch_training_time / dl_training_time, 
-        dl_training_time / pytorch_training_time
+        pytorch_training_time / dl_training_time,
+        dl_training_time / pytorch_training_time,
     )
-    accuracy_ratio = max(
-        dl_accuracy / pytorch_accuracy,
-        pytorch_accuracy / dl_accuracy
-    )
-    
+    accuracy_ratio = max(dl_accuracy / pytorch_accuracy, pytorch_accuracy / dl_accuracy)
+
     print("Summary:")
     print("--------\n")
     print(
