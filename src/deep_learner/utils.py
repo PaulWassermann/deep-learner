@@ -95,7 +95,6 @@ def rand_int(
 
 
 def rand_normal(
-    shape: int | Sequence[int],
     mean: ArrayLike[float] | Tensor,
     std: ArrayLike[float] | Tensor,
     requires_grad: bool = False,
@@ -103,10 +102,10 @@ def rand_normal(
     """Create a new tensor and initialize its values sampling from a normal distribution,
     described by a mean and a standard deviation.
 
+    Mean and std should have broadcastable shapes.
+
     Parameters
     ----------
-    shape : int | Sequence[int]
-        Shape of the new tensor
     mean : float
         Mean of the normal distribution
     std : float
@@ -120,6 +119,8 @@ def rand_normal(
         A new tensor filled with random values sampled from a normal
         distribution
     """
+    # TODO: should change this since this could slow computations down; the best
+    # solution would be to give the caller control over the device
     if isinstance(mean, Tensor):
         mean = mean.to(Device.CPU).data
 
@@ -127,7 +128,7 @@ def rand_normal(
         std = std.to(Device.CPU).data
 
     rng = np.random.default_rng()
-    return tensor(rng.normal(loc=mean, scale=std, size=shape), requires_grad)
+    return tensor(rng.normal(loc=mean, scale=std), requires_grad)
 
 
 def rand_uniform(
