@@ -2,8 +2,10 @@ from collections.abc import Generator, Iterable, Sequence
 from itertools import islice
 
 import numpy as np
+from numpy.typing import ArrayLike
 
 from deep_learner import Tensor, tensor
+from deep_learner._core.types import Device
 
 
 def batch(x, /, *iterables, batch_size: int, shuffle: bool = True) -> Generator[tuple]:
@@ -90,6 +92,42 @@ def rand_int(
         distribution
     """
     return tensor(np.random.randint(low, high, shape), requires_grad)
+
+
+def rand_normal(
+    shape: int | Sequence[int],
+    mean: ArrayLike[float] | Tensor,
+    std: ArrayLike[float] | Tensor,
+    requires_grad: bool = False,
+) -> Tensor:
+    """Create a new tensor and initialize its values sampling from a normal distribution,
+    described by a mean and a standard deviation.
+
+    Parameters
+    ----------
+    shape : int | Sequence[int]
+        Shape of the new tensor
+    mean : float
+        Mean of the normal distribution
+    std : float
+        Standard deviation of the normal distribution
+    requires_grad : bool, optional
+        Indicates if gradients must be accumulated for the new tensor, by default False
+
+    Returns
+    -------
+    Tensor
+        A new tensor filled with random values sampled from a normal
+        distribution
+    """
+    if isinstance(mean, Tensor):
+        mean = mean.to(Device.CPU).data
+
+    if isinstance(std, Tensor):
+        std = std.to(Device.CPU).data
+
+    rng = np.random.default_rng()
+    return tensor(rng.normal(loc=mean, scale=std, size=shape), requires_grad)
 
 
 def rand_uniform(
