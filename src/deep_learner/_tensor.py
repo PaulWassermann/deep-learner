@@ -91,6 +91,9 @@ class Tensor:
     def __mul__(self, other: Tensor) -> Tensor:
         return deep_learner.multiply(self, other)
 
+    def __pow__(self, other: float) -> Tensor:
+        return deep_learner.power(self, other)
+
     def __radd__(self, other: ArrayLike) -> Tensor:
         return deep_learner.add(Tensor(other, device=self.device), self)
 

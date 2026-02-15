@@ -6,6 +6,7 @@ from .functional.functions import (
     exponential,
     matmul,
     multiply,
+    power,
     subtract,
     sum,
 )
@@ -20,6 +21,7 @@ __all__ = [
     "matmul",
     "multiply",
     "ones",
+    "power",
     "rand_int",
     "rand_normal",
     "rand_uniform",

@@ -24,6 +24,12 @@ def exponential(a: t.Tensor) -> t.Tensor:
     )
 
 
+def power(a: t.Tensor, power: float) -> t.Tensor:
+    return t.Tensor(
+        data=a.data**power, grad_func=B.PowerBackward(a, power), device=a.device
+    )
+
+
 def relu(a: t.Tensor) -> t.Tensor:
     backend = utils.get_backend(a.device)
     return t.Tensor(

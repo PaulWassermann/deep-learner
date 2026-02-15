@@ -56,6 +56,25 @@ class ExponentialBackward(BackwardFunction):
         return {self.a: t.Tensor(data=self.a.data * grad.data, device=grad.device)}
 
 
+class PowerBackward(BackwardFunction):
+    def __init__(self, a: t.Tensor, power: float):
+        super().__init__()
+
+        self.a = a
+        self.power = power
+
+    def __call__(self, grad: t.Tensor) -> dict[t.Tensor, t.Tensor]:
+        if self.power == 1:
+            return {self.a: t.Tensor(grad.data, device=grad.device)}
+
+        return {
+            self.a: t.Tensor(
+                (self.power * self.a.data ** (self.power - 1)) * grad.data,
+                device=grad.device,
+            )
+        }
+
+
 class ReluBackward(BackwardFunction):
     def __init__(self, a: t.Tensor):
         super().__init__()
