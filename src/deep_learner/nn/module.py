@@ -89,7 +89,9 @@ class Module(ABC):
         return (
             f"{self.__class__.__name__}(\n"
             + utils.indent_text(
-                "\n".join(repr(module) for module in self._modules.values())
+                ",\n".join(
+                    f"{name}: {repr(module)}" for name, module in self._modules.items()
+                )
             )
             + "\n)"
         )

@@ -1,6 +1,14 @@
 from ._core.types import Device
 from ._tensor import Tensor, tensor
-from .functional.functions import add, divide, exponential, matmul, multiply, subtract, sum
+from .functional.functions import (
+    add,
+    divide,
+    exponential,
+    matmul,
+    multiply,
+    subtract,
+    sum,
+)
 from .utils import constant, ones, rand_int, rand_normal, rand_uniform, zeros
 
 __all__ = [

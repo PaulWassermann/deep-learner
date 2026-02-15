@@ -26,7 +26,7 @@ class Sequential(nn.Module):
         return (
             "Sequential(\n"
             + utils.indent_text(
-                "\n".join(
+                ",\n".join(
                     f"({index}): {repr(getattr(self, str(index)))}"
                     for index in range(self._length)
                 )
