@@ -276,6 +276,26 @@ class MatmulBackward(BackwardFunction):
         }
 
 
+class MeanSquaredErrorBackward(BackwardFunction):
+    def __init__(self, a: t.Tensor, b: t.Tensor):
+        super().__init__()
+
+        self.a = a
+        self.b = b
+
+    def __call__(self, grad: t.Tensor) -> dict[t.Tensor, t.Tensor]:
+        return {
+            self.a: t.Tensor(
+                (self.a.data - self.b.data) * grad.data / len(self.a.data),
+                device=grad.device,
+            ),
+            self.b: t.Tensor(
+                (self.b.data - self.a.data) * grad.data / len(self.a.data),
+                device=grad.device,
+            ),
+        }
+
+
 class MutliplyBackward(BackwardFunction):
     def __init__(self, a: t.Tensor, b: t.Tensor):
         super().__init__()

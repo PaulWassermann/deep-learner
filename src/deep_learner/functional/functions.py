@@ -106,6 +106,14 @@ def matmul(a: t.Tensor, b: t.Tensor) -> t.Tensor:
     )
 
 
+def mean_squared_error(a: t.Tensor, b: t.Tensor) -> t.Tensor:
+    return t.Tensor(
+        data=((b.data - a.data) ** 2).mean() / 2,
+        grad_func=b.MeanSquaredErrorBackward(a, b),
+        device=a.device,
+    )
+
+
 def multiply(a: t.Tensor, b: t.Tensor) -> t.Tensor:
     return t.Tensor(
         data=a.data * b.data, grad_func=B.MutliplyBackward(a, b), device=a.device
