@@ -75,9 +75,6 @@ class Tensor:
     def detach(self) -> Tensor:
         return Tensor(self.data, device=self.device)
 
-    def __div__(self, other: Tensor) -> Tensor:
-        return deep_learner.divide(self, other)
-
     def __len__(self):
         return len(self.data)
 
@@ -151,6 +148,9 @@ class Tensor:
             self._grad_func.to(device)
 
         return self
+
+    def __truediv__(self, other: Tensor) -> Tensor:
+        return deep_learner.divide(self, other)
 
     def zero_grad(self) -> None:
         backend = utils.get_backend(self.device)
