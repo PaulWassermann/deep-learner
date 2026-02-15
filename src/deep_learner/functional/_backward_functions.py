@@ -56,6 +56,16 @@ class ExponentialBackward(BackwardFunction):
         return {self.a: t.Tensor(data=self.a.data * grad.data, device=grad.device)}
 
 
+class MeanBackward(BackwardFunction):
+    def __init__(self, a: t.Tensor):
+        super().__init__()
+
+        self.a = a
+
+    def __call__(self, grad: t.Tensor) -> dict[t.Tensor, t.Tensor]:
+        return {self.a: t.Tensor(data=grad.data / len(self.a.data), device=grad.device)}
+
+
 class PowerBackward(BackwardFunction):
     def __init__(self, a: t.Tensor, power: float):
         super().__init__()

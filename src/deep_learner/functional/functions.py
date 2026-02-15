@@ -24,6 +24,10 @@ def exponential(a: t.Tensor) -> t.Tensor:
     )
 
 
+def mean(a: t.Tensor) -> t.Tensor:
+    return t.Tensor(data=a.data.mean(), grad_func=B.MeanBackward(a), device=a.device)
+
+
 def power(a: t.Tensor, power: float) -> t.Tensor:
     return t.Tensor(
         data=a.data**power, grad_func=B.PowerBackward(a, power), device=a.device
