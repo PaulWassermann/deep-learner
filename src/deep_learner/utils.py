@@ -4,8 +4,7 @@ from itertools import islice
 import numpy as np
 from numpy.typing import ArrayLike
 
-from deep_learner import Tensor, tensor
-from deep_learner._core.types import Device
+from deep_learner import Device, Tensor, tensor
 
 
 def batch(x, /, *iterables, batch_size: int, shuffle: bool = True) -> Generator[tuple]:
@@ -95,8 +94,8 @@ def rand_int(
 
 
 def rand_normal(
-    mean: ArrayLike[float] | Tensor,
-    std: ArrayLike[float] | Tensor,
+    mean: ArrayLike | Tensor,
+    std: ArrayLike | Tensor,
     requires_grad: bool = False,
 ) -> Tensor:
     """Create a new tensor and initialize its values sampling from a normal distribution,
