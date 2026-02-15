@@ -46,6 +46,16 @@ class DropoutBackward(BackwardFunction):
         }
 
 
+class ExponentialBackward(BackwardFunction):
+    def __init__(self, a: t.Tensor):
+        super().__init__()
+
+        self.a = a
+
+    def __call__(self, grad: t.Tensor) -> dict[t.Tensor, t.Tensor]:
+        return {self.a: t.Tensor(data=self.a.data * grad.data, device=grad.device)}
+
+
 class ReluBackward(BackwardFunction):
     def __init__(self, a: t.Tensor):
         super().__init__()

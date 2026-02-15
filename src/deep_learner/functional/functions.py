@@ -17,6 +17,13 @@ def dropout(a: t.Tensor, drop_proba: float) -> t.Tensor:
     )
 
 
+def exponential(a: t.Tensor) -> t.Tensor:
+    backend = utils.get_backend(a.device)
+    return t.Tensor(
+        data=backend.exp(a.data), grad_func=B.ExponentialBackward(a), device=a.device
+    )
+
+
 def relu(a: t.Tensor) -> t.Tensor:
     backend = utils.get_backend(a.device)
     return t.Tensor(
