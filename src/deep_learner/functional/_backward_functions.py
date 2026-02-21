@@ -320,11 +320,11 @@ class MeanSquaredErrorBackward(BackwardFunction):
     def __call__(self, grad: t.Tensor) -> dict[t.Tensor, t.Tensor]:
         return {
             self.x: t.Tensor(
-                (self.x.data - self.y.data) * grad.data / len(self.x.data),
+                (self.x.data - self.y.data) * grad.data / self.x.data.size,
                 device=grad.device,
             ),
             self.y: t.Tensor(
-                (self.y.data - self.x.data) * grad.data / len(self.x.data),
+                (self.y.data - self.x.data) * grad.data / self.x.data.size,
                 device=grad.device,
             ),
         }
