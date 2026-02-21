@@ -63,7 +63,7 @@ class MeanBackward(BackwardFunction):
         self.a = a
 
     def __call__(self, grad: t.Tensor) -> dict[t.Tensor, t.Tensor]:
-        return {self.a: t.Tensor(data=grad.data / len(self.a.data), device=grad.device)}
+        return {self.a: t.Tensor(data=grad.data / self.a.data.size, device=grad.device)}
 
 
 class PowerBackward(BackwardFunction):
