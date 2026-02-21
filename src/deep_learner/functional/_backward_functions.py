@@ -233,13 +233,13 @@ class BinaryCrossEntropyBackward(BackwardFunction):
                     f.safe_div(self.y.data, self.x.data)
                     - f.safe_div(1 - self.y.data, 1 - self.x.data)
                 )
-                / len(self.x.data)
+                / self.x.data.size
                 * grad.data,
                 device=grad.device,
             ),
             self.y: t.Tensor(
                 data=-(f.safe_log(self.x.data) - f.safe_log(1 - self.x.data))
-                / len(self.x.data)
+                / self.x.data.size
                 * grad.data,
                 device=grad.device,
             ),
