@@ -28,9 +28,9 @@ def mean(a: t.Tensor) -> t.Tensor:
     return t.Tensor(data=a.data.mean(), grad_func=B.MeanBackward(a), device=a.device)
 
 
-def power(a: t.Tensor, power: float) -> t.Tensor:
+def power(a: t.Tensor, exponent: float) -> t.Tensor:
     return t.Tensor(
-        data=a.data**power, grad_func=B.PowerBackward(a, power), device=a.device
+        data=a.data**exponent, grad_func=B.PowerBackward(a, exponent), device=a.device
     )
 
 
