@@ -37,7 +37,7 @@ def power(a: t.Tensor, exponent: float) -> t.Tensor:
 def relu(a: t.Tensor) -> t.Tensor:
     backend = utils.get_backend(a.device)
     return t.Tensor(
-        data=backend.maximum(a.data, 0, a.data),
+        data=backend.maximum(a.data, 0),
         grad_func=B.ReluBackward(a),
         device=a.device,
     )
