@@ -164,7 +164,7 @@ class SoftsignBackward(BackwardFunction):
         backend = utils.get_backend(grad.device)
         return {
             self.a: t.Tensor(
-                data=(1 / (1 + backend.abs(self.a.data) ** 2)) * grad.data,
+                data=(1 / ((1 + backend.abs(self.a.data)) ** 2)) * grad.data,
                 device=grad.device,
             )
         }
