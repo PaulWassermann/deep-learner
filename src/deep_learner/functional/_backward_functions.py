@@ -260,12 +260,12 @@ class CrossEntropyBackward(BackwardFunction):
         return {
             self.x: t.Tensor(
                 data=-f.safe_div(self.y.data, self.x.data)
-                / len(self.x.data)
+                / self.x.data.shape[0]
                 * grad.data,
                 device=grad.device,
             ),
             self.y: t.Tensor(
-                data=-f.safe_log(self.x.data) / len(self.x.data) * grad.data,
+                data=-f.safe_log(self.x.data) / self.x.data.shape[0] * grad.data,
                 device=grad.device,
             ),
         }
